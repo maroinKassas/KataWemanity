@@ -1,0 +1,87 @@
+@Autowired
+	private ISuiviOperationManager suiviOperationManager;
+
+	@Test
+	public void testGetNewWorkbook() {
+		final SuiviOperationCriteriaBean suiviOpCriteriaBean = new SuiviOperationCriteriaBean();
+		suiviOpCriteriaBean.setNumeroContrat("NFH180249");
+		final List<SuiviOperationBean> suiviOpes = this.suiviOperationManager.rechercherWithParams(suiviOpCriteriaBean);
+
+		final Map<Object, String> libelles = new HashMap<>();
+		for (final ProfilHQE p : ProfilHQE.values()) {
+			libelles.put(p, p.getLibelle());
+		}
+
+		// Verification CALYX
+		HSSFWorkbook workbook = UtilSuiviOperation.getNewWorkbook(DateUtils.getStringFromDate(new Date(), "dd/MM/yyyy HH:mm:ss"), suiviOpes,
+				UtilSuiviOperationEnum.CALYX, libelles);
+
+		HSSFSheet sheet = workbook.getSheet("Suivi Operationnel");
+
+		Iterator iterator = sheet.getRow(2).cellIterator();
+		int nombreColonnes = 0;
+		while (iterator.hasNext()) {
+			final HSSFCell cell = (HSSFCell) iterator.next();
+			if (nombreColonnes == 16) {
+				Assert.assertEquals("Blocage processus suite impayé", cell.getRichStringCellValue().getString());
+			}
+
+			if (nombreColonnes == 41) {
+				Assert.assertEquals("Commentaires Cerqual CALYX", cell.getRichStringCellValue().getString());
+			}
+			nombreColonnes++;
+		}
+
+		// 37 Nombre de colonnes pour calyx
+		Assert.assertTrue(nombreColonnes == 42);
+		// ============================================================================================
+
+		// Verification CLIENT
+		workbook = UtilSuiviOperation.getNewWorkbook(DateUtils.getStringFromDate(new Date(), "dd/MM/yyyy HH:mm:ss"), suiviOpes,
+				UtilSuiviOperationEnum.CLIENT, libelles);
+
+		sheet = workbook.getSheet("Suivi Operationnel");
+
+		iterator = sheet.getRow(2).cellIterator();
+		nombreColonnes = 0;
+		while (iterator.hasNext()) {
+			final HSSFCell cell = (HSSFCell) iterator.next();
+			if (nombreColonnes == 41) {
+				Assert.assertFalse(cell.getRichStringCellValue().getString().equals("Commentaires Cerqual CALYX"));
+			}
+			nombreColonnes++;
+		}
+
+		// 37 Nombre de colonnes pour calyx
+		Assert.assertTrue(nombreColonnes == 41);
+		// ============================================================================================
+
+		// Verification COLLECTIVITE
+		workbook = UtilSuiviOperation.getNewWorkbook(DateUtils.getStringFromDate(new Date(), "dd/MM/yyyy HH:mm:ss"), suiviOpes,
+				UtilSuiviOperationEnum.COLLECTIVITE, libelles);
+
+		sheet = workbook.getSheet("Suivi Operationnel");
+
+		iterator = sheet.getRow(2).cellIterator();
+		nombreColonnes = 0;
+		while (iterator.hasNext()) {
+			final HSSFCell cell = (HSSFCell) iterator.next();
+			if (nombreColonnes == 5) {
+				Assert.assertEquals("Agence", cell.getRichStringCellValue().getString());
+			}
+
+			if (nombreColonnes == 13) {
+				Assert.assertEquals("Type de Financement", cell.getRichStringCellValue().getString());
+			}
+
+			if (nombreColonnes == 34) {
+				Assert.assertEquals("Nombre d’étoiles obtenues", cell.getRichStringCellValue().getString());
+			}
+			nombreColonnes++;
+		}
+
+		// 37 Nombre de colonnes pour le portail collectivite
+		Assert.assertTrue(nombreColonnes == 37);
+		// ============================================================================================
+
+	}
